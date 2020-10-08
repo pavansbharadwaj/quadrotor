@@ -1,0 +1,68 @@
+component plant
+% Plant of quadrocopter
+
+inputs
+   ctrl={[0;0;0;0],'N'}; %Thrust:left
+end
+
+outputs
+    pos={[0;0;0],'m'}; %Position:right
+    v = {[0;0;0], 'm/s' }; %Velocity:right
+    a = {[0;0;0], 'm/s^2' }; %Acceleration:right
+    
+%     angle = {[0;0;0],'rad'};%Angle:right
+% 	w = {[0;0;0],'rad/s'};%Angular velocity:right
+	angle = {[0;0;0],'deg'};%Angle:right
+	w = {[0;0;0],'deg/s'};%Angular velocity:right
+end
+
+parameters
+    m = {0.027,'kg'};%Mass
+    g = {9.81,'m/s^2'};%Gravity
+    d = {0.046,'m'};%Arm length
+    k = {1e-9,'1'};%Lift constant
+    b = {2.75e-11,'1'};%Drag constant
+end
+
+parameters(Access=private)    
+%     Moment of inertia matrix
+    Jx = {1.395e-5,'kg*m^2'};
+    Jy = {1.436e-5,'kg*m^2'};
+    Jz = {2.173e-5,'kg*m^2'};
+    J = [Jx,0,0;0,Jy,0;0,0,Jz];
+
+%     Add time invariant  parameters here 
+	kg_extra = {1,'kg'};
+	m_extra = {1,'m'};
+end
+
+variables(Access=private)
+%     Add time variant variables here
+% 	w_dot = {[0;0;0],'rad/s^2'}
+	w_dot = {[0;0;0],'deg/s^2'}
+	R_ib3 = {[0;0;0],'1'}
+	radians = {[0;0;0],'1'}
+end
+
+equations
+	pos.der == v;
+	v.der == a;
+	
+	angle.der == w;
+	w.der == w_dot;
+	
+	radians == angle/180*pi;
+	
+	R_ib3==[sin(radians(2));
+					-cos(radians(2))*sin(radians(1));
+					cos(radians(1))*cos(radians(2))];%rotational matrix
+
+% 	a == [0;0;-g] + R_ib3.*sum(ctrl)/m; % Translation dynamics to the world frame
+	a == 0; % Translation dynamics to the world frame
+
+	J*w_dot == (-cross(w,J*w)+[	[-1,-1,1,1]*ctrl*d/sqrt(2);
+															[-1,1,1,-1]*ctrl*d/sqrt(2);
+															[-1,1,-1,1]*ctrl*m_extra*b/k]);
+
+end
+end
